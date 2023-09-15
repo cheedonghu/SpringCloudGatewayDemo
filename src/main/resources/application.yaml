@@ -1,8 +1,11 @@
+server:
+  port: 8888
+
 spring:
   cloud:
     gateway:
       routes:
         - id: demoRoute
-          uri: http://localhost:8081
+          uri: http://localhost:8080
           predicates:
             - Path=/demo/**

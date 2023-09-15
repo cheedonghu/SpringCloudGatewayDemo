@@ -8,6 +8,8 @@
 //import lombok.extern.slf4j.Slf4j;
 //import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 //import org.springframework.cloud.gateway.filter.GlobalFilter;
+//import org.springframework.cloud.gateway.filter.factory.rewrite.CachedBodyOutputMessage;
+//import org.springframework.cloud.gateway.support.BodyInserterContext;
 //import org.springframework.core.Ordered;
 //import org.springframework.core.io.buffer.DataBuffer;
 //import org.springframework.core.io.buffer.DataBufferUtils;
@@ -89,7 +91,7 @@
 //        HttpHeaders headers = new HttpHeaders();
 //        headers.putAll(exchange.getRequest().getHeaders());
 //        headers.remove(HttpHeaders.CONTENT_LENGTH);
-//        MyCachedBodyOutputMessage outputMessage = new MyCachedBodyOutputMessage(exchange, headers);
+//        CachedBodyOutputMessage outputMessage = new CachedBodyOutputMessage(exchange, headers);
 //        ServerHttpRequest.Builder requestBuilder = exchange.getRequest().mutate();
 //        requestBuilder.headers(k -> k.remove("Content-length"));
 //
