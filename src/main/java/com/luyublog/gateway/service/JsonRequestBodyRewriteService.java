@@ -16,7 +16,7 @@ import reactor.core.publisher.Mono;
  */
 @Service
 @Slf4j
-public class RequestBodyRewriteService implements RewriteFunction<byte[], byte[]> {
+public class JsonRequestBodyRewriteService implements RewriteFunction<byte[], byte[]> {
     @Override
     public Publisher<byte[]> apply(ServerWebExchange exchange, byte[] body) {
         JSONObject map = JSONUtil.parseObj(body);
