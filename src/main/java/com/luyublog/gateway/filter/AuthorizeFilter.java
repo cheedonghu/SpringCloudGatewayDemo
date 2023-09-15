@@ -31,6 +31,8 @@
 //import java.util.List;
 //import java.util.Map;
 //import java.util.Objects;
+//import java.util.regex.Matcher;
+//import java.util.regex.Pattern;
 //
 ///**
 // * @description:
@@ -94,46 +96,6 @@
 //        CachedBodyOutputMessage outputMessage = new CachedBodyOutputMessage(exchange, headers);
 //        ServerHttpRequest.Builder requestBuilder = exchange.getRequest().mutate();
 //        requestBuilder.headers(k -> k.remove("Content-length"));
-//
-//        Mono mono = bodyInserter.insert(outputMessage, new BodyInserterContext())
-//                .then(Mono.defer(() -> {
-//                    //解决body内数据过长读取不完整的问题
-//                    Flux<DataBuffer> body = outputMessage.getBody();
-//                    DataBufferHolder holder = new DataBufferHolder();
-//                    try{
-//                        body.subscribe(dataBuffer -> {
-//                            int len = dataBuffer.readableByteCount();
-//                            holder.length = len;
-//                            byte[] bytes = new byte[len];
-//                            dataBuffer.read(bytes);
-//                            DataBufferUtils.release(dataBuffer);
-//                            String oldBody = new String(bytes, StandardCharsets.UTF_8);
-//                            JsonNode jsonNode = objectMapper.readTree(in);
-//                            //到这可以读取数据，做校验之类的
-//                            //JsonNode token = oldDataJSON.get("token");
-//                            jsonNode .set("test","修改数据");
-//                            DataBuffer data = outputMessage.bufferFactory().allocateBuffer();
-//                            data.write(jsonNode.toString().getBytes(StandardCharsets.UTF_8));
-//                            holder.length = data.readableByteCount();
-//                            holder.dataBuffer=data;
-//                        });
-//
-//                    }catch (Exception e){
-//                        if(e.getCause() instanceof ServiceException){
-//                            ServiceException e1 = (ServiceException) e.getCause();
-//                            return handleFailedRequest(exchange, JSONObject.toJSONString(CommonResponse.error(e1.getCode(), e1.getMessage())));
-//                        }
-//                        return handleFailedRequest(exchange, JSONObject.toJSONString(CommonResponse.error(SYSTEM_ERROR.getCode(), SYSTEM_ERROR.getMessage())));
-//                    }
-//
-//
-//                    ServerHttpRequestDecorator decorator = newDecorator(exchange,holder.length, Flux.just(holder.dataBuffer));
-//                    return chain.filter(exchange.mutate().request(decorator).build());
-//
-//                }));
-//
-//        return mono;
-//    }
 //
 //    //修改form参数
 //    private Mono<Void> fileRequest(MediaType contentType,ServerWebExchange exchange, GatewayFilterChain chain){
