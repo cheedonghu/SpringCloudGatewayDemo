@@ -19,23 +19,17 @@ import reactor.core.publisher.Mono;
 public class JsonRequestBodyRewriteService implements RewriteFunction<byte[], byte[]> {
     @Override
     public Publisher<byte[]> apply(ServerWebExchange exchange, byte[] body) {
-        JSONObject map = JSONUtil.parseObj(body);
-        log.info("原始报文:{}", map.toString());
+        JSONObject request = JSONUtil.parseObj(body);
+        log.info("原始报文:{}", request.toString());
         try {
-//            Map<String, Object> map = gson.fromJson(body, Map.class);
-            map.set("empId", "2345");
-            map.set("department", "Engineering");
+            request.set("empId", "2345");
+            request.set("department", "Engineering");
 
-            log.info("修改后报文:{}", map.toString());
-            return Mono.just(map.toString().getBytes());
-        } catch (Exception ex) {
-            log.error(
-                    "An error occured while transforming the request body in class RequestBodyRewrite. {}",
-                    ex);
-
-            // Throw custom exception here
-            throw new RuntimeException(
-                    "An error occured while transforming the request body in class RequestBodyRewrite.");
+            log.info("修改后报文:{}", request);
+            return Mono.just(request.toString().getBytes());
+        } catch (Exception e) {
+            log.error("修改报文时出错", e);
+            throw e;
         }
     }
 }
