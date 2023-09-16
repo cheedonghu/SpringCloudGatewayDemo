@@ -39,7 +39,7 @@ public class FormDataRequestBodyRewriteService implements RewriteFunction<byte[]
         // 将表单转为字符串格式从而根据boundary分割表单数据。注意这里不能用默认编码
         String request = StrUtil.str(body, StandardCharsets.ISO_8859_1);
 
-        //获取boundary的随机字符信息
+        // 获取boundary的随机字符信息
         String contentType = exchange.getRequest().getHeaders().getContentType().toString();
         String randomStr = contentType.substring(contentType.indexOf(BOUNDARY_PREFIX_IN_CONTENT_TYPE) + BOUNDARY_PREFIX_IN_CONTENT_TYPE.length());
 
