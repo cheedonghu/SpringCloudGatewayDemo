@@ -1,5 +1,6 @@
 package com.luyublog.gateway.filter;
 
+import com.luyublog.gateway.common.config.OrderConstant;
 import com.luyublog.gateway.service.FormDataRequestBodyRewriteService;
 import com.luyublog.gateway.service.JsonRequestBodyRewriteService;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +54,6 @@ public class RequestModifyFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
-        return 20; // The order in which you want this filter to execute
+        return OrderConstant.REQUEST_MODIFY_FILTER.getOrder();
     }
 }
