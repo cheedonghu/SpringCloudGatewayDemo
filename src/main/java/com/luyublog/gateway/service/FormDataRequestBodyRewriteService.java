@@ -6,7 +6,6 @@ import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.reactivestreams.Publisher;
 import org.springframework.cloud.gateway.filter.factory.rewrite.RewriteFunction;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
@@ -16,7 +15,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * @description: 获取表单内的json键数据并进行修改
+ * @description:
+ * 获取表单内的json键数据并进行修改。这里有几个前提条件
+ * 1. 表单只包含两部分：json字符串和其他类型数据
+ * 2. json的表单key值为json
+ * <p>
  * 参考：https://blog.csdn.net/qq_36966137/article/details/128536391
  *
  * @author: east
@@ -25,52 +28,57 @@ import java.util.regex.Pattern;
 @Service
 @Slf4j
 public class FormDataRequestBodyRewriteService implements RewriteFunction<byte[], byte[]> {
-    private final String BOUNDARY_PREFIX = "----WebKitFormBoundary";
-
-    private final String EXACT_BOUNDARY_PREFIX = "------WebKitFormBoundary";
+    private final String BOUNDARY_PREFIX_IN_CONTENT_TYPE = "----WebKitFormBoundary";
+    private final String BOUNDARY_PREFIX_IN_FORM_DATA = "------WebKitFormBoundary";
+    private final String BOUNDARY_SUFFIX = "--\r\n";
 
     @Override
     public Publisher<byte[]> apply(ServerWebExchange exchange, byte[] body) {
+        String finalResultString = "";
 
-        String modifyString = "";
+        // 将表单转为字符串格式从而根据boundary分割表单数据。注意这里不能用默认编码
+        String request = StrUtil.str(body, StandardCharsets.ISO_8859_1);
 
-        String data = StrUtil.str(body, StandardCharsets.ISO_8859_1);
+        //获取boundary的随机字符传信息
+        String contentType = exchange.getRequest().getHeaders().getContentType().toString();
+        String randomStr = contentType.substring(contentType.indexOf(BOUNDARY_PREFIX_IN_CONTENT_TYPE) + BOUNDARY_PREFIX_IN_CONTENT_TYPE.length());
 
-        MediaType contentType = exchange.getRequest().getHeaders().getContentType();
-        //获取随机字符传信息
-        String randomStr = contentType.toString().substring(contentType.toString().indexOf(BOUNDARY_PREFIX) + BOUNDARY_PREFIX.length(), contentType.toString().length());
+        // 这里和前端约定json数据的表单key为json
+        String keyPart = "^\r\nContent-Disposition: form-data; name=\"json\"";
+        Pattern r = Pattern.compile(keyPart);
 
-        String part = "^\r\nContent-Disposition: form-data; name=\"json\"";
-        Pattern r = Pattern.compile(part);
-        String[] split = data.split(EXACT_BOUNDARY_PREFIX + randomStr);
+        // 根据表单内分割线进行分割。并通过关键段落keyPart来找到目标json数据
+        String[] split = request.split(BOUNDARY_PREFIX_IN_FORM_DATA + randomStr);
         for (int x = 0; x < split.length - 1; x++) {
             Matcher m = r.matcher(split[x]);
             if (m.find()) {
-                String originalString = split[x];
+                // 找到了json报文部分数据
+                String originalJsonString = split[x];
 
                 // 找到 JSON 数据的起始和结束位置
-                int startIndex = originalString.indexOf("{\"");
-                int endIndex = originalString.indexOf("\"}") + 2;
+                int startIndex = originalJsonString.indexOf("{\"");
+                int endIndex = originalJsonString.indexOf("\"}") + 2;
                 // 提取 JSON 数据
-                String jsonData = originalString.substring(startIndex, endIndex);
+                String jsonData = originalJsonString.substring(startIndex, endIndex);
                 log.info("原始报文为：{}", jsonData);
 
                 JSONObject jsonObject = JSONUtil.parseObj(jsonData);
                 jsonObject.set("empId", "2345");
                 jsonObject.set("department", "Engineering");
-                String resultString = originalString.substring(0, startIndex) + jsonObject + originalString.substring(endIndex);
-                log.info("修改后报文为：{}", resultString);
+                String modifiedString = originalJsonString.substring(0, startIndex) + jsonObject + originalJsonString.substring(endIndex);
+                log.info("修改后报文为：{}", modifiedString);
 
                 // 重新组装split数组
-                modifyString = modifyString + resultString + EXACT_BOUNDARY_PREFIX + randomStr;
+                finalResultString = finalResultString + modifiedString + BOUNDARY_PREFIX_IN_FORM_DATA + randomStr;
             } else {
-                modifyString = modifyString + split[x] + EXACT_BOUNDARY_PREFIX + randomStr;
+                // 重组表单数据
+                finalResultString = finalResultString + split[x] + BOUNDARY_PREFIX_IN_FORM_DATA + randomStr;
             }
         }
 
-        String endStr = "--\r\n";
-        modifyString = modifyString + endStr;
+        // 补上最后一截数据
+        finalResultString = finalResultString + BOUNDARY_SUFFIX;
 
-        return Mono.just(modifyString.getBytes(StandardCharsets.ISO_8859_1));
+        return Mono.just(finalResultString.getBytes(StandardCharsets.ISO_8859_1));
     }
 }
