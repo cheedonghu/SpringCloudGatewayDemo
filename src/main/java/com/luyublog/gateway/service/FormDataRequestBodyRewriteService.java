@@ -22,6 +22,8 @@ import java.util.regex.Pattern;
  * <p>
  * 参考：https://blog.csdn.net/qq_36966137/article/details/128536391
  *
+ * todo 参考@RequestPart注解的实现可能有更好的方法
+ *
  * @author: east
  * @date: 2023/9/15
  */
