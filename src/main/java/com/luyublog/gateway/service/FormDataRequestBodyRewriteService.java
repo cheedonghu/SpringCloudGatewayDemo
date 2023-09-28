@@ -11,6 +11,7 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -32,8 +33,8 @@ import java.util.regex.Pattern;
 @Service
 @Slf4j
 public class FormDataRequestBodyRewriteService implements RewriteFunction<byte[], byte[]> {
-    private final String BOUNDARY_PREFIX_IN_CONTENT_TYPE = "----WebKitFormBoundary";
-    private final String BOUNDARY_PREFIX_IN_FORM_DATA = "------WebKitFormBoundary";
+    private final String BOUNDARY_PREFIX_IN_CONTENT_TYPE = "boundary=";
+    private final String BOUNDARY_PREFIX = "--";
     private final String BOUNDARY_SUFFIX = "--\r\n";
 
     @Override
@@ -52,37 +53,44 @@ public class FormDataRequestBodyRewriteService implements RewriteFunction<byte[]
         Pattern r = Pattern.compile(keyPart);
 
         // 根据表单内分割线进行分割。并通过关键段落keyPart来找到目标json数据
-        String[] split = request.split(BOUNDARY_PREFIX_IN_FORM_DATA + randomStr);
-        for (int x = 0; x < split.length - 1; x++) {
-            Matcher m = r.matcher(split[x]);
-            if (m.find()) {
-                // 找到了json报文部分数据
-                String originalJsonString = split[x];
+        String[] split = request.split(BOUNDARY_PREFIX + randomStr);
 
-                // 找到 JSON 数据的起始和结束位置
-                int startIndex = originalJsonString.indexOf("{\"");
-                int endIndex = originalJsonString.indexOf("\"}") + 2;
-                // 提取 JSON 数据
-                String jsonData = originalJsonString.substring(startIndex, endIndex);
-                log.info("原始报文为：{}", jsonData);
+        // 表单转换为Map
+        HashMap<String, String> formDataMap = new HashMap<>();
+        getFormData(formDataMap, split);
 
-                JSONObject jsonObject = JSONUtil.parseObj(jsonData);
-                jsonObject.set("empId", "2345");
-                jsonObject.set("department", "Engineering");
-                String modifiedString = originalJsonString.substring(0, startIndex) + jsonObject + originalJsonString.substring(endIndex);
-                log.info("修改后报文为：{}", modifiedString);
+        // 获取其中json数据并替换
+        JSONObject originJson = JSONUtil.parseObj(formDataMap.get("json"));
+        String originJsonString = formDataMap.get("json");
+        log.info("开始处理原json数据:{}", originJson.toString());
+        originJson.set("newKey", "newValue");
+        log.info("新json数据:{}", originJson.toString());
+        String modifiedJsonString = originJson.toString();
 
-                // 重新组装split数组
-                finalResultString = finalResultString + modifiedString + BOUNDARY_PREFIX_IN_FORM_DATA + randomStr;
-            } else {
-                // 重组表单数据
-                finalResultString = finalResultString + split[x] + BOUNDARY_PREFIX_IN_FORM_DATA + randomStr;
+        // 将新数据替换掉原表单中的数据
+        finalResultString = StrUtil.replace(request, originJsonString, modifiedJsonString);
+
+        return Mono.just(finalResultString.getBytes(StandardCharsets.ISO_8859_1));
+    }
+
+    /**
+     * 将表单转为map数据
+     *
+     * @param resultMap     map
+     * @param splitFormData 分割结果
+     */
+    private void getFormData(HashMap<String, String> resultMap, String[] splitFormData) {
+        String keyString = "\r\nContent-Disposition: form-data; name=\"(.*?)\"";
+        String valueString = "\r\n\r\n(.*?)\r\n";
+        for (String formInfo : splitFormData) {
+            Pattern keyPattern = Pattern.compile(keyString);
+            Pattern valuePattern = Pattern.compile(valueString);
+            Matcher keyMatcher = keyPattern.matcher(formInfo);
+            Matcher valueMatcher = valuePattern.matcher(formInfo);
+            if (keyMatcher.find() && valueMatcher.find()) {
+                resultMap.put(keyMatcher.group(1), valueMatcher.group(1));
             }
         }
 
-        // 补上最后一截数据
-        finalResultString = finalResultString + BOUNDARY_SUFFIX;
-
-        return Mono.just(finalResultString.getBytes(StandardCharsets.ISO_8859_1));
     }
 }
