@@ -84,7 +84,8 @@ public class FormDataRequestBodyRewriteService implements RewriteFunction<byte[]
         String valueString = "\r\n\r\n(.*?)\r\n";
         for (String formInfo : splitFormData) {
             Pattern keyPattern = Pattern.compile(keyString);
-            Pattern valuePattern = Pattern.compile(valueString);
+            // DOTALL兼容因string采用utf16编码导致出现终止符问题
+            Pattern valuePattern = Pattern.compile(valueString, Pattern.DOTALL);
             Matcher keyMatcher = keyPattern.matcher(formInfo);
             Matcher valueMatcher = valuePattern.matcher(formInfo);
             if (keyMatcher.find() && valueMatcher.find()) {
