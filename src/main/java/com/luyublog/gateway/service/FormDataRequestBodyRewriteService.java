@@ -39,6 +39,9 @@ public class FormDataRequestBodyRewriteService implements RewriteFunction<byte[]
 
     @Override
     public Publisher<byte[]> apply(ServerWebExchange exchange, byte[] body) {
+//        Mono<MultiValueMap<String, Part>> multipartData = exchange.getMultipartData();
+
+
         String finalResultString = "";
 
         // 将表单转为字符串格式从而根据boundary分割表单数据。注意这里不能用默认编码

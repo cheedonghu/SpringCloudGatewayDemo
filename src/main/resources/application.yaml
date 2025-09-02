@@ -2,6 +2,8 @@ server:
   port: 10000
 
 spring:
+  codec:
+    max-in-memory-size: 15MB
   cloud:
     gateway:
       routes:
